@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catchment</title>
+<meta name="description" content="A daily puzzle from Chicago: place schools on a real neighborhood to reach as many kids as you can.">
+<link rel="canonical" href="https://henryheligas.us/catchment/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#f3f5f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111416" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Henry Heligas">
+<meta property="og:title" content="Catchment">
+<meta property="og:description" content="A daily puzzle from Chicago: place schools on a real neighborhood to reach as many kids as you can.">
+<meta property="og:url" content="https://henryheligas.us/catchment/">
+<meta property="og:image" content="https://henryheligas.us/catchment/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600&display=swap">
+<link rel="stylesheet" href="style.css?v=1610a76dd4">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <h1 class="wordmark">Catchment</h1>
+      <p class="tagline">Place schools. Reach kids.</p>
+    </div>
+    <div class="today">
+      <svg id="locator" class="locator" aria-hidden="true"></svg>
+      <div class="today-text">
+        <p class="eyebrow" id="meta"></p>
+        <h2 class="area" id="area"></h2>
+      </div>
+    </div>
+    <nav class="top-buttons" aria-label="Game menu">
+      <button class="icon-btn" id="btn-prev" aria-label="Previous board">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-next" aria-label="Next board">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-help" aria-label="How to play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3a2.6 2.6 0 1 1 3.6 2.4c-.7.3-1.1.9-1.1 1.6v.6"/><circle class="dot" cx="12" cy="17" r=".6"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-stats" aria-label="Statistics">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M10 20V5M15 20v-9M20 20V8"/></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <section class="board-wrap" aria-label="Board">
+      <div class="views" id="views" role="group" aria-label="Show on the board" hidden>
+        <button class="view-btn" data-view="yours" aria-pressed="true">Your district</button>
+        <button class="view-btn" data-view="best" aria-pressed="false">Best district</button>
+        <button class="view-btn" data-view="real" aria-pressed="false">Real schools</button>
+      </div>
+      <svg id="board" class="board" aria-label="Map of the board. Corners are buttons."></svg>
+      <p class="key" aria-label="Color key: darker tokens mean more kids on that street; green means your schools reach them.">
+        <span>Kids per street, in hundreds</span>
+        <span class="key-ramp" aria-hidden="true"><i class="b1">1</i><i class="b2">2</i><i class="b3">3</i><i class="b4">4</i><i class="b5">5</i><i class="b6">6–7</i><i class="b7">8+</i></span>
+        <span class="key-on" aria-hidden="true"><i class="b4 on">4</i>reached</span>
+        <span class="key-feats" id="key-feats"></span>
+      </p>
+      <p class="legend" id="legend"></p>
+    </section>
+
+    <aside class="dock" aria-label="Your district">
+      <div class="score">
+        <p class="label">Kids reached</p>
+        <p class="big" id="score">0</p>
+        <p class="sub" id="score-sub"></p>
+        <p class="waste" id="waste"></p>
+      </div>
+      <div class="pieces" id="pieces" role="group" aria-label="Pieces"></div>
+      <div class="checks">
+        <div class="pips" id="pips" aria-hidden="true"></div>
+        <button class="btn primary" id="btn-check">Check</button>
+        <button class="btn ghost" id="btn-clear">Clear</button>
+      </div>
+      <p class="hint" id="hint"></p>
+      <ol class="history" id="history" aria-label="Your checks"></ol>
+      <button class="btn wide" id="btn-result" hidden>See your result</button>
+    </aside>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlg-help" class="dlg">
+  <form method="dialog" class="dlg-close"><button class="icon-btn" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></form>
+  <h2 class="dlg-title">How to play</h2>
+  <p class="lede">Kids live along the streets. Open schools at the corners to reach as many kids as you can.</p>
+  <ul class="rules">
+    <li><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-kid" x="-1" y="-1" width="2" height="2"/></svg><span><b>Kids.</b> Each dot is the kids on one street, in hundreds. A 4 is about 400 kids.</span></li>
+    <li><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-school" x="-1" y="-1" width="2" height="2"/></svg><span><b>School.</b> Opens on a corner and reaches the 3 streets that meet there.</span></li>
+    <li data-feature="magnet"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-magnet" x="-1" y="-1" width="2" height="2"/></svg><span><b>Magnet.</b> Put it on a school. Kids come from one corner further: 6 more streets.</span></li>
+    <li data-feature="safe"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-safe" x="-1" y="-1" width="2" height="2"/></svg><span><b>Safe Passage.</b> Kids walk through this corner for free, so a school's reach carries on through it. It also gets kids past roadwork.</span></li>
+    <li data-feature="roadwork"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-cone" x="-1" y="-1" width="2" height="2"/></svg><span><b>Roadwork.</b> No one walks through, and no school can open here.</span></li>
+    <li data-feature="closed"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-closed" x="-1" y="-1" width="2" height="2"/></svg><span><b>Closed.</b> A real school that closed in 2013. Kids can walk past, but nothing new opens here.</span></li>
+    <li data-feature="barriers"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-cut" x="-1" y="-1" width="2" height="2"/></svg><span><b>Expressways and rivers.</b> A red bar means there's no bridge or overpass nearby, so kids on that street can't walk to that corner.</span></li>
+    <li data-feature="parks"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-tree" x="-1" y="-1" width="2" height="2"/></svg><span><b>Parks.</b> Kids cut through big parks for free, so a school's reach carries on through a park corner.</span></li>
+    <li data-feature="routes"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-safe" x="-1" y="-1" width="2" height="2"/></svg><span><b>Safe Passage routes.</b> Real CPS routes with adults posted along them. Kids walk through these corners for free.</span></li>
+    <li data-feature="rail"><svg class="ico" viewBox="-1 -1 2 2" aria-hidden="true"><use href="#i-train" x="-1" y="-1" width="2" height="2"/></svg><span><b>L stations.</b> Kids can ride the L one stop, then walk as usual. A school at a station also reaches the streets around the next stop each way.</span></li>
+  </ul>
+  <p>Kids reached by two schools only count once. You get <b>3 checks</b>. Each tells you how close you are to the best possible district. Reach 100% to win.</p>
+  <p class="small">A new board every day, cut from a real Chicago neighborhood. Kid counts come from the 2020 Census: children aged 5 to 14, spread onto a grid of streets about half a mile long. Catchment is part of <i>The Student Shuffle</i>, a game about where cities put their schools, first shown at the Chicago Architecture Biennial.</p>
+  <p class="small">Data: U.S. Census Bureau; Chicago Public Schools and CTA via the City of Chicago Data Portal; Chicago Park District; expressways and bridges © OpenStreetMap contributors (ODbL).</p>
+  <form method="dialog"><button class="btn primary wide">Play</button></form>
+</dialog>
+
+<dialog id="dlg-result" class="dlg">
+  <form method="dialog" class="dlg-close"><button class="icon-btn" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></form>
+  <p class="eyebrow" id="res-eyebrow"></p>
+  <h2 class="dlg-title" id="res-title"></h2>
+  <p class="res-big"><span id="res-pct"></span><span class="res-of">of the best district</span></p>
+  <p id="res-line"></p>
+  <pre class="share" id="share-text"></pre>
+  <div class="row">
+    <button class="btn primary" id="btn-copy">Copy result</button>
+    <button class="btn" id="btn-see-best">See the best district</button>
+  </div>
+  <section class="irl">
+    <h3>In real life</h3>
+    <p id="irl-text"></p>
+    <details class="irl-more" id="irl-more"><summary>School names</summary><p class="small" id="irl-names"></p></details>
+    <button class="btn ghost" id="btn-see-real">Show them on the board</button>
+  </section>
+  <p class="next" id="next"></p>
+</dialog>
+
+<dialog id="dlg-stats" class="dlg">
+  <form method="dialog" class="dlg-close"><button class="icon-btn" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></form>
+  <h2 class="dlg-title">Your stats</h2>
+  <div class="stat-grid" id="stat-grid"></div>
+  <h3>Checks needed to find the best district</h3>
+  <div class="dist" id="dist"></div>
+  <p class="small">Stats count each day's board, played on that day, in this browser.</p>
+</dialog>
+
+<script>window.CATCHMENT_CONFIG = {"shareUrl":"https://henryheligas.us/catchment/","allowFuture":false};</script>
+<script src="puzzles.js?v=dc79b37b1e"></script>
+<script src="rules.js?v=e632c2b78e"></script>
+<script src="game.js?v=58c526d4a9"></script>
+</body>
+</html>
