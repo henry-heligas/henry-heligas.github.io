@@ -494,6 +494,67 @@ button { font: inherit; color: inherit; }
 .dist .fill { background: var(--ink-2); color: var(--paper); border-radius: 4px; padding: 2px 8px; text-align: right; min-width: 28px; font-weight: 600; }
 .dist .fill.hi { background: var(--reach); color: var(--reach-ink); }
 
+/* text buttons and links inside the panels */
+.link {
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: 2px;
+}
+.link:hover, .dlg a:hover { text-decoration-color: var(--ink); }
+.dlg a { color: var(--ink); text-decoration-color: var(--muted); text-underline-offset: 2px; }
+.today-link {
+  margin-left: 8px; border: 1px solid var(--rule); background: var(--panel); border-radius: 999px;
+  padding: 1px 8px; font: 600 10.5px/1.5 var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink); cursor: pointer; vertical-align: 1px;
+}
+.today-link:hover { border-color: var(--ink-2); }
+
+/* ---------- archive: one calendar per month */
+.arc-summary { color: var(--ink-2); }
+.arc-month h3 { margin-top: 16px; }
+.arc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.arc-dow { text-align: center; font-size: 11px; color: var(--muted); padding-bottom: 2px; }
+.arc-day {
+  aspect-ratio: 1; min-width: 0;
+  display: grid; grid-template-rows: 1fr 9px; place-items: center; padding: 3px 2px 5px;
+  border: 1px solid var(--rule); border-radius: 10px; background: var(--land);
+  font: 600 14px/1 var(--font-ui); font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.arc-day:hover { border-color: var(--ink-2); }
+.arc-day.empty { border-color: transparent; background: transparent; color: var(--muted); font-weight: 400; opacity: 0.55; cursor: default; }
+.arc-day.solved { background: var(--reach-soft); border-color: transparent; }
+.arc-day.is-today { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.arc-day.preview { border-style: dashed; }
+.arc-day[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.arc-day .marks { display: flex; gap: 2px; align-items: center; height: 7px; }
+.arc-day .sq, .arc-key .sq { width: 7px; height: 7px; border-radius: 2px; }
+.arc-day .dot, .arc-key .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); display: inline-block; }
+.arc-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 14px; }
+.arc-key span { display: inline-flex; align-items: center; gap: 5px; }
+.arc-key .sq { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+
+/* ---------- about: a longer read */
+.dlg-wide { width: min(640px, calc(100vw - 32px)); }
+.about p, .about li { line-height: 1.6; }
+.about h3 { margin-top: 26px; }
+.about .lede { font-size: 17px; color: var(--ink-2); max-width: 52ch; }
+.about h3 { letter-spacing: 0.3em; }
+.about .setup, .about .sources { margin: 0 0 12px; padding-left: 22px; display: grid; gap: 8px; }
+.about .setup li::marker { font: 500 15px var(--font-display); color: var(--muted); }
+.about .sources { font-size: 13.5px; color: var(--ink-2); }
+.about .byline { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.diagram { margin: 4px 0 16px; display: grid; gap: 6px; justify-items: center; }
+.diagram svg { width: min(100%, 340px); height: auto; display: block; }
+.diagram figcaption { font-size: 13px; color: var(--muted); max-width: 52ch; text-align: center; }
+.dg-ghost { stroke: var(--rule); stroke-width: 2.5; fill: none; stroke-linecap: round; }
+.dg-street { stroke: var(--ink-2); stroke-width: 2.5; fill: none; stroke-linecap: round; }
+.dg-reach { stroke: var(--reach); stroke-width: 26; opacity: 0.4; fill: none; stroke-linecap: round; }
+.dg-corner { fill: var(--ink-2); }
+.dg-dim { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+.dg-label { fill: var(--ink-2); font: 500 11px var(--font-ui); text-anchor: middle; }
+.dg-kid circle { fill: var(--g4); stroke: var(--panel); stroke-width: 3; }
+.dg-kid.out circle { fill: var(--k4); }
+.dg-kid text { fill: var(--t4); font: 700 13px var(--font-ui); text-anchor: middle; dominant-baseline: central; }
+
 /* ---------- phone: board first, then a compact control strip that fits on one screen */
 @media (max-width: 860px) {
   .app { gap: 8px; padding-block: 8px 12px; grid-template-rows: auto auto; align-content: start; }
@@ -544,3 +605,5 @@ button { font: inherit; color: inherit; }
   .pop, .bump { animation: none; }
   .toast { transition: none; }
 }
+/* box-copy voice: the sales pitch after the history */
+.about .copy { font: 500 17px/1.5 var(--font-display); letter-spacing: 0.03em; }

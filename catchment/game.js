@@ -19,6 +19,7 @@
     safe: { name: 'Safe Passage', icon: 'i-safe', tip: 'Kids walk through this corner for free.' },
   };
   const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   const $ = (s) => document.querySelector(s);
   const fmt = (n) => n.toLocaleString('en-US');
@@ -52,15 +53,20 @@
     return m ? Math.min(Math.max(1, +m[1]), lastNo) : null;
   }
 
+  const puzzleNo = (n) => DATA.puzzles[(n - 1) % DATA.puzzles.length];
+  const sigFor = (p) => `${p.date}|${p.best.pts}|${p.segs.length}|${JSON.stringify(p.layers || {})}`;
+  /** Saved play for board n, or null (never played, or the puzzles were regenerated since). */
+  function savedFor(n) {
+    const s = store.get('board:' + n, null);
+    return s && s.sig === sigFor(puzzleNo(n)) ? s : null;
+  }
+
   function load(n) {
     no = n;
-    puzzle = DATA.puzzles[(n - 1) % DATA.puzzles.length];
+    puzzle = puzzleNo(n);
     board = Rules.makeBoard(NET, puzzle);
     best = Rules.fromGlobal(board, puzzle.best);
-    const sig = `${puzzle.date}|${puzzle.best.pts}|${puzzle.segs.length}|${JSON.stringify(puzzle.layers || {})}`;
-    let saved = store.get('board:' + n, null);
-    if (saved && saved.sig !== sig) saved = null; // puzzles were regenerated since this was saved
-    st = saved || { sig, pl: { schools: [], safe: [] }, checks: [], done: false, solved: false };
+    st = savedFor(n) || { sig: sigFor(puzzle), pl: { schools: [], safe: [] }, checks: [], done: false, solved: false };
     view = 'yours';
     showReal = false;
     hoverV = null;
@@ -227,11 +233,10 @@
 
     drawLocator();
     const d = new Date(puzzle.date + 'T12:00:00Z');
-    $('#meta').textContent = `No. ${no} · ${DAYS[d.getUTCDay()]} · ${puzzle.theme}${isToday() ? '' : no < todayNo ? ' · Past board' : ' · Preview'}`;
+    $('#meta').textContent = `No. ${no} · ${DAYS[d.getUTCDay()]} · ${puzzle.theme}${no > todayNo ? ' · Preview' : ''}`;
     $('#area').textContent = puzzle.area;
     $('#legend').textContent = `${puzzle.blurb} Each street is about ${(L / 5280).toFixed(1)} mi long; kids walk about ${(L / 2 / 5280).toFixed(1)} mi to the corner.`;
-    $('#btn-prev').disabled = no <= 1;
-    $('#btn-next').disabled = no >= lastNo;
+    $('#btn-today').hidden = isToday() || todayNo > lastNo;
     $('#score-sub').textContent = `of ${fmt(board.totalPts * KPP)} kids on this board`;
     const has = present();
     document.querySelectorAll('#dlg-help [data-feature]').forEach((li) => { li.hidden = !has[li.dataset.feature]; });
@@ -586,7 +591,67 @@
     $('#next').textContent = isToday()
       ? `Next board in ${mins >= 60 ? `${Math.floor(mins / 60)} h ` : ''}${mins % 60} min.`
       : `Today's board is No. ${todayNo}.`;
+    $('#btn-res-archive').hidden = lastNo < 2;
   }
+
+  /* ---------------- archive: a calendar of every board so far, newest month first */
+  function showArchive() {
+    const released = Math.min(todayNo, DATA.puzzles.length);
+    const months = new Map();
+    for (let n = 1; n <= lastNo; n++) {
+      const [y, m, d] = puzzleNo(n).date.split('-').map(Number);
+      const k = y * 12 + m - 1;
+      if (!months.has(k)) months.set(k, { y, m, days: new Map() });
+      months.get(k).days.set(d, n);
+    }
+    let finished = 0;
+    let found = 0;
+    const dow = DAYS.map((d) => `<span class="arc-dow" aria-hidden="true">${d[0]}</span>`).join('');
+    const html = [...months.values()].reverse().map(({ y, m, days }) => {
+      const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+      const length = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      let cells = '';
+      for (let d = 1; d <= length; d++) {
+        const col = d === 1 && first ? ` style="grid-column-start:${first + 1}"` : '';
+        const n = days.get(d);
+        if (!n) { cells += `<span class="arc-day empty"${col} aria-hidden="true"><span class="d">${d}</span></span>`; continue; }
+        const s = savedFor(n);
+        const cls = ['arc-day'];
+        let marks = '';
+        let status = 'not played';
+        if (s && s.checks.length) {
+          marks = s.checks.map((c) => `<i class="sq ${sqClass(c.pct)}"></i>`).join('');
+          const top = Math.max(...s.checks.map((c) => c.pct));
+          if (s.solved) status = `best district in ${s.checks.length} ${s.checks.length === 1 ? 'check' : 'checks'}`;
+          else status = s.done ? `finished, ${top}% of best` : `${top}% of best so far`;
+        } else if (s && (s.pl.schools.length || s.pl.safe.length)) {
+          marks = '<i class="dot"></i>';
+          status = 'started';
+        }
+        if (s && s.done && n <= released) { finished++; if (s.solved) found++; }
+        if (s && s.solved) cls.push('solved');
+        if (n === todayNo) cls.push('is-today');
+        if (n > released) cls.push('preview');
+        const label = `No. ${n}, ${DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${MONTHS[m - 1]} ${d}${n === todayNo ? ', today' : ''}: ${status}`;
+        cells += `<button class="${cls.join(' ')}" data-n="${n}"${col}${n === no ? ' aria-current="true"' : ''} aria-label="${esc(label)}">` +
+          `<span class="d">${d}</span><span class="marks">${marks}</span></button>`;
+      }
+      return `<section class="arc-month"><h3>${MONTHS[m - 1]} ${y}</h3><div class="arc-grid">${dow}${cells}</div></section>`;
+    }).join('');
+    $('#arc-months').innerHTML = html;
+    $('#arc-summary').textContent = `${released} ${released === 1 ? 'board' : 'boards'} so far. ` +
+      (finished ? `You've finished ${finished}${found ? `, and found the best district on ${found}` : ''}.` : 'Tap a day to play it.');
+    const dlg = $('#dlg-archive');
+    if (!dlg.open) dlg.showModal();
+    dlg.scrollTop = 0;
+  }
+
+  function showAbout() {
+    const dlg = $('#dlg-about');
+    if (!dlg.open) dlg.showModal();
+    dlg.scrollTop = 0;
+  }
+  const DIALOGS = { 'dlg-archive': showArchive, 'dlg-about': showAbout, 'dlg-stats': () => showStats(), 'dlg-help': () => $('#dlg-help').showModal() };
 
   function showStats() {
     const s = store.get('stats', { played: 0, solved: 0, streak: 0, maxStreak: 0, dist: { 1: 0, 2: 0, 3: 0, x: 0 } });
@@ -677,17 +742,41 @@
   });
   $('#btn-help').addEventListener('click', () => $('#dlg-help').showModal());
   $('#btn-stats').addEventListener('click', showStats);
+  $('#btn-archive').addEventListener('click', showArchive);
+  $('#btn-about').addEventListener('click', showAbout);
+  // any [data-open] button (in the rules, the result) swaps to that dialog
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-open]');
+    if (!b || !DIALOGS[b.dataset.open]) return;
+    const from = b.closest('dialog');
+    if (from) from.close();
+    DIALOGS[b.dataset.open]();
+  });
+  $('#arc-months').addEventListener('click', (e) => {
+    const b = e.target.closest('.arc-day[data-n]');
+    if (!b) return;
+    $('#dlg-archive').close();
+    go(+b.dataset.n);
+  });
   const go = (n) => {
     if (n < 1 || n > lastNo) return;
     const h = n === todayNo ? '' : '#p' + n;
     if (location.hash === h) load(n);
     else location.hash = h;
   };
-  $('#btn-prev').addEventListener('click', () => go(no - 1));
-  $('#btn-next').addEventListener('click', () => go(no + 1));
-  window.addEventListener('hashchange', () => load(fromHash() || todayNo));
+  $('#btn-today').addEventListener('click', () => go(todayNo));
+  // #about opens the About page over whatever board is showing; closing it drops the hash
+  const ABOUT = '#about';
+  window.addEventListener('hashchange', () => {
+    if (location.hash === ABOUT) { showAbout(); return; }
+    load(fromHash() || todayNo);
+  });
+  $('#dlg-about').addEventListener('close', () => {
+    if (location.hash === ABOUT) history.replaceState(null, '', location.pathname + location.search);
+  });
   document.addEventListener('keydown', (e) => {
     if (document.querySelector('dialog[open]') || e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { go(no + (e.key === 'ArrowLeft' ? -1 : 1)); return; }
     const kinds = ['school', 'magnet', 'safe'].filter((p) => (board.pieces[p] || 0) > 0);
     const i = Number(e.key) - 1;
     if (i >= 0 && i < kinds.length) { tool = kinds[i]; update(); }
@@ -695,7 +784,9 @@
 
   /* ---------------- start */
   load(fromHash() || todayNo);
-  if (!store.get('seenHelp', false)) {
+  if (location.hash === ABOUT) {
+    showAbout();
+  } else if (!store.get('seenHelp', false)) {
     store.set('seenHelp', true);
     $('#dlg-help').showModal();
   } else if (st.done) {
